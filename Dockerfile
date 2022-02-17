@@ -3,14 +3,16 @@ FROM alpine
 LABEL MAINTAINER="<crazyjums@gmail.com>"
 
 ADD nginx-1.18.0.tar.gz /tmp
-ADD nginx/nginx.conf /tmp/nginx.conf
-ADD start.sh /tmp/start.sh
-ADD nginx/include/default.conf /tmp/default.conf
+COPY nginx/nginx.conf /tmp/nginx.conf
+COPY start.sh /tmp/start.sh
+COPY nginx/include/default.conf /tmp/default.conf
 
 ## isntall nginx by source code
 WORKDIR /tmp/nginx-1.18.0
 
-RUN apk update && apk upgrade\
+ENV TZ=Asia/Shanghai
+RUN  ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \ 
+	&& apk update && apk upgrade\
 	&& apk add --no-cache --virtual .build-deps \
 	mlocate \
 	g++ \
@@ -28,16 +30,16 @@ RUN apk update && apk upgrade\
 	&& make\
 	&& make install\
 	&& mkdir -p /data/nginx/logs /data/nginx/logs\
-    && mkdir -p /usr/local/nginx/conf/include \
+	&& mkdir -p /usr/local/nginx/conf/include \
 	&& mv /usr/local/nginx/conf/nginx.conf /usr/local/nginx/conf/nginx.conf.back\
 	&& mv /tmp/nginx.conf /usr/local/nginx/conf/nginx.conf\
 	&& mv /tmp/start.sh /start.sh\
-    && mv /tmp/default.conf /usr/local/nginx/conf/include/default.conf \
+	&& mv /tmp/default.conf /usr/local/nginx/conf/include/default.conf \
 	&& rm -rf /tmp/*\
 	&& ln -s /usr/local/nginx/sbin/nginx /usr/local/bin/ \
 	&& /usr/local/nginx/sbin/nginx -t \
-    && apk del .build-deps
+	&& apk del .build-deps
 
-EXPOSE 80
+EXPOSE 80 443
 
 ENTRYPOINT ["/bin/sh","/start.sh"]
